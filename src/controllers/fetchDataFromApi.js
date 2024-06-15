@@ -9,7 +9,7 @@ export const fetchDataFromApi = async (req, res) => {
       method: 'GET',
       headers: {
         accept: 'application/json',
-        Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYjBmNTE4Njc1MDllOGY3ZTNmNmJiYTEwNDMxNGJiOCIsInN1YiI6IjY1Yjc0NDZmMGZiMTdmMDE3YjM0NWIzYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.4AnGH3FzC1JV5ieiqMiJKdbDRtNxSM0RTsDcVpqW5_Y'
+        Authorization:` ${process.env.Authorization}`
       }
     };
 
