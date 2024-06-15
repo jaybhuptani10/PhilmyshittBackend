@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+
 
 export const fetchDataFromApi = async (req, res) => {
   const { movie } = req.query; // Extract the movie type from query parameters
