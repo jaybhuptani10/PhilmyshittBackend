@@ -4,7 +4,7 @@ import cors from 'cors';
 const app = express(); 
 app.use(cors(
     {
-        origin: ["http://localhost:5173/","https://philmyyshitt.vercel.app/","https://philmyshitt-backend.vercel.app/"]   ,
+        origin: "https://philmyyshitt.vercel.app/"  ,
         credentials: true,
        
     
