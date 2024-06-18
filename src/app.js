@@ -5,11 +5,7 @@ import cors from 'cors';
 const app = express(); 
 
 // CORS
-app.use(cors({
-    origin:["https://philmyyshitt.vercel.app"],
-    methods:["POST","GET"],
-    credentials:[true]
-}))
+app.options('*', cors()) // include before other routes
 
 // Other middleware
 app.use(express.json({ limit: "16kb" }));
