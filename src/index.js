@@ -1,35 +1,15 @@
 // src/index.js
 import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import fetchRouter from './routes/fetch.routes.js';
-import connectDB from './db/index.js';
 
+import dotenv from 'dotenv';
+
+import connectDB from './db/index.js';
+import app from "./app.js";
 dotenv.config({ path: './.env' });
 
-const app = express();
 
-// Middleware
-app.use(cors({
-    origin: ["https://philmyyshitt.vercel.app", "http://localhost:5173"],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-}));
 
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-// Routes
-app.use('/api', fetchRouter);
-app.get('/', (req, res) => {
-    res.send("chal gaya");
-});
-app.get('/test', (req, res) => {
-    res.json({ message: 'pass!' });
-});
-
-// Start server
 const startServer = async () => {
     try {
         await connectDB();
@@ -45,4 +25,4 @@ const startServer = async () => {
 
 startServer();
 
-export default app;
+
