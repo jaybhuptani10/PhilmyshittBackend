@@ -3,23 +3,28 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 const app = express(); 
-app.use(cors({
+
+// CORS
+const corsOptions = {
     origin: ["https://philmyyshitt.vercel.app", "http://localhost:5173"],
     optionsSuccessStatus: 200,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.options('*', cors())
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+
+// Other middleware
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-
-//Routes
+// Routes
 import fetchRouter from './routes/fetch.routes.js';
 import userRouter from './routes/user.routes.js';
 
+// Routes Declaration
 //ROutes Decalarion
 
 app.use('/api', fetchRouter);
