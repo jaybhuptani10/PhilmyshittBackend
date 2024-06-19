@@ -28,7 +28,7 @@ import userRouter from './routes/user.routes.js';
 app.use('/api', fetchRouter);
 app.use('/user',userRouter);
 app.use('/', (req, res) => {
-    res.json("Hello World");
+    res.json("Hell");
 });
 
 export default app;
