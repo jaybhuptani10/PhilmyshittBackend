@@ -67,6 +67,48 @@ const logoutUser = asyncHandler(async (req,res)=>{
         message: "Logged out successfully"
     });
 });
+const userProfile = asyncHandler(async (req, res) => {
+    try {
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: "Not authorized, token missing"
+            });
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET, {}, async (err, userDoc) => {
+            if (err) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Not authorized, token invalid",
+                    error: err.message // Log the exact error
+                });
+            }
+
+            const user = await userModel.findById(userDoc.id);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const { name, email, id } = user;
+            res.json({ name, email, id });
+        });
+    } catch (e) {
+        console.error('Server error:', e);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: e.message
+        });
+    }
+});
+
+
 export {logoutUser};
 export {loginUser};
+export {userProfile};
 export {registerUser};
