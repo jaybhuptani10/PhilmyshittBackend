@@ -51,7 +51,7 @@ export const getMovieInfo = async (req, res) => {
 export const getSeriesInfo = async (req, res) => {
   const { series } = req.query; // Extract the movie type from query parameters
   
-  const url = `https://api.themoviedb.org/3/search/${series}`;
+  const url = `https://api.themoviedb.org/3/tv/${series}`;
   
   try {
     const options = {
