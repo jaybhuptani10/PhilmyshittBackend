@@ -54,7 +54,7 @@ const loginUser = asyncHandler(async (req, res) => {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production', // Set secure to true in production
                     sameSite: 'None' // Required for cross-site cookies
-                }).json(userDoc);
+                }).json({ token, user: userDoc }); // Include token in response
             });
         } else {
             return res.status(400).json({
@@ -64,6 +64,7 @@ const loginUser = asyncHandler(async (req, res) => {
         }
     }
 });
+
 
 // Logout User
 const logoutUser = asyncHandler(async (req, res) => {
@@ -113,5 +114,6 @@ const userProfile = asyncHandler(async (req, res) => {
         });
     }
 });
+
 
 export { logoutUser, loginUser, userProfile, registerUser };
