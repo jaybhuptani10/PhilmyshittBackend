@@ -25,6 +25,9 @@ const movieSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    title: {
+        type:String
+    }
     
 }, { timestamps: true });
 

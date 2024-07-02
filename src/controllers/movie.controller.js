@@ -3,7 +3,7 @@ import { ApiResponse } from "../utils/apiresponse.js";
 import userModel from "../models/user.model.js";
 import movieModel from "../models/movie.model.js";
 export const addMovieToUser = async (req, res) => {
-    const { movieId, userEmail, stars, liked, reviews, watchlisted } = req.body;
+    const { movieId, userEmail, stars, liked, reviews, watchlisted, title } = req.body;
     if (!movieId || !userEmail) {
         return res.status(400).json({
             success: false,
@@ -26,6 +26,7 @@ export const addMovieToUser = async (req, res) => {
             movie.stars = stars;
             movie.reviews = reviews;
             movie.watchlisted = watchlisted;
+           
             await movie.save();
             return res.status(200).json({
                 success: true,
@@ -40,7 +41,8 @@ export const addMovieToUser = async (req, res) => {
             stars: stars,
             liked: liked,
             reviews: reviews,
-            watchlisted: watchlisted
+            watchlisted: watchlisted,
+            title:title
         });
 
         if (!newMovie) {
@@ -69,28 +71,52 @@ export const addMovieToUser = async (req, res) => {
     }
 };
 
-export const getMovieDetails = async (req, res) => {
-    const { movieId, userId } = req.query;
-    if (!movieId || !userId) {
+export const getAddedDetails = async (req, res) => {
+    const { movieId, userEmail } = req.query;
+    
+    // Log the incoming request details
+    console.log(`Fetching details for movieId: ${movieId}, userEmail: ${userEmail}`);
+    
+    if (!movieId || !userEmail) {
+        console.log("Movie ID or User ID not provided");
         return res.status(400).json({
             success: false,
             message: "Movie ID or User ID not provided"
         });
     }
+    
     try {
-        const movie = await movieModel.findOne({ movieid: movieId, owner: userId });
+        const user = await userModel.findOne({ email: userEmail });
+        if (!user) {
+            console.log(`User not found for email: ${userEmail}`);
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Log the user details
+        console.log(`User found: ${user._id}`);
+        
+        const movie = await movieModel.findOne({ movieid: movieId, owner: user._id });
         if (!movie) {
+            console.log(`Movie not found for movieId: ${movieId} and owner: ${user._id}`);
             return res.status(404).json({
                 success: false,
                 message: "Movie not found"
             });
         }
-        res.status(200).json({
+
+        // Log the movie details
+        console.log(`Movie found: ${movie._id}`);
+        
+        return res.status(200).json({
             success: true,
             movie
         });
     } catch (error) {
-        res.status(500).json({
+        console.error("Error fetching movie details:", error);
+        return res.status(500).json({
             success: false,
             message: "Server error",
             error: error.message
