@@ -2,124 +2,181 @@ import asyncHandler from "../utils/asynchandler.js";
 import { ApiResponse } from "../utils/apiresponse.js";
 import userModel from "../models/user.model.js";
 import movieModel from "../models/movie.model.js";
-export const addMovieToUser = async (req, res) => {
-    const { movieId, userEmail, stars, liked, reviews, watchlisted, title } = req.body;
-    if (!movieId || !userEmail) {
-        return res.status(400).json({
-            success: false,
-            message: "Movie ID or userEmail not provided"
-        });
+
+/**
+ * Add or update movie details for a user
+ */
+export const addMovieToUser = asyncHandler(async (req, res) => {
+    const { userEmail, movieId, title, watched, liked, stars, watchlisted } = req.body;
+  
+    if (!userEmail || !movieId || !title) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
-    try {
-        const user = await userModel.findOne({ email: userEmail });
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        let movie = await movieModel.findOne({ movieid: movieId, owner: user._id });
-
-        if (movie) {
-            movie.liked = liked;
-            movie.stars = stars;
-            movie.reviews = reviews;
-            movie.watchlisted = watchlisted;
-           
-            await movie.save();
-            return res.status(200).json({
-                success: true,
-                message: "Movie status updated",
-                movie
-            });
-        }
-
-        const newMovie = await movieModel.create({
-            owner: user._id,
-            movieid: movieId,
-            stars: stars,
-            liked: liked,
-            reviews: reviews,
-            watchlisted: watchlisted,
-            title:title
-        });
-
-        if (!newMovie) {
-            return res.status(500).json({
-                success: false,
-                message: "Movie not added"
-            });
-        }
-
-        user.watchedList.push(newMovie._id);
-        await user.save();
-
-        return res.status(201).json({
-            success: true,
-            message: "Movie data added successfully",
-            data: newMovie
-        });
-
-    } catch (error) {
-        console.error("Error adding movie to user:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-            error: error.message
-        });
+  
+    const user = await userModel.findOne({ email: userEmail });
+    if (!user) return res.status(404).json({ message: "User not found" });
+  
+    let movie = await movieModel.findOne({ movieId });
+  
+    if (!movie) {
+      // If movie doesn't exist, create a new movie entry
+      movie = new movieModel({ movieId, title, users: [] });
     }
-};
-
-export const getAddedDetails = async (req, res) => {
-    const { movieId, userEmail } = req.query;
-    
-    // Log the incoming request details
-    console.log(`Fetching details for movieId: ${movieId}, userEmail: ${userEmail}`);
-    
-    if (!movieId || !userEmail) {
-        console.log("Movie ID or User ID not provided");
-        return res.status(400).json({
-            success: false,
-            message: "Movie ID or User ID not provided"
-        });
+  
+    // Check if user already has an entry for this movie
+    const existingUserData = movie.users.find((u) => u.userId.equals(user._id));
+  
+    if (existingUserData) {
+      // Update existing user entry
+      existingUserData.watched = watched;
+      existingUserData.liked = liked;
+      existingUserData.stars = stars;
+    } else {
+      // Add new entry for this user
+      movie.users.push({ userId: user._id, watched, liked, stars });
     }
-    
-    try {
-        const user = await userModel.findOne({ email: userEmail });
-        if (!user) {
-            console.log(`User not found for email: ${userEmail}`);
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // Log the user details
-        console.log(`User found: ${user._id}`);
-        
-        const movie = await movieModel.findOne({ movieid: movieId, owner: user._id });
-        if (!movie) {
-            console.log(`Movie not found for movieId: ${movieId} and owner: ${user._id}`);
-            return res.status(404).json({
-                success: false,
-                message: "Movie not found"
-            });
-        }
-
-        // Log the movie details
-        console.log(`Movie found: ${movie._id}`);
-        
-        return res.status(200).json({
-            success: true,
-            movie
-        });
-    } catch (error) {
-        console.error("Error fetching movie details:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            error: error.message
-        });
+  
+    await movie.save();
+  
+    // Handle watched and watchlisted logic:
+    // If movie is being added to the watched list, remove it from watchlist if needed
+    if (watched) {
+      if (!user.watchedMovies.includes(movie._id)) {
+        user.watchedMovies.push(movie._id);
+      }
+      // Remove from watchlist if it's there
+      if (user.watchlistedMovies.includes(movie._id)) {
+        user.watchlistedMovies = user.watchlistedMovies.filter((id) => !id.equals(movie._id));
+      }
     }
-};
+  
+    // If movie is being added to the watchlist, remove it from watched list if needed
+    if (watchlisted) {
+      if (!user.watchlistedMovies.includes(movie._id)) {
+        user.watchlistedMovies.push(movie._id);
+      }
+      // Remove from watched list if it's there
+      if (user.watchedMovies.includes(movie._id)) {
+        user.watchedMovies = user.watchedMovies.filter((id) => !id.equals(movie._id));
+      }
+    }
+  
+    await user.save();
+  
+    res.status(200).json({ message: "Movie data updated successfully", movie });
+  });
+  
+
+/**
+ * Get movie details added by a user
+ */
+export const getAddedDetails = asyncHandler(async (req, res) => {
+  const { userEmail, movieId } = req.query;
+  
+  if (!userEmail || !movieId) {
+    return res.status(400).json({ message: "Missing required query parameters" });
+  }
+
+  const user = await userModel.findOne({ email: userEmail });
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  const movie = await movieModel.findOne({ movieId });
+  if (!movie) return res.status(404).json({ message: "Movie not found" });
+
+  const userMovieData = movie.users.find((u) => u.userId.equals(user._id));
+  
+  if (!userMovieData) {
+    return res.status(404).json({
+      message: "Movie not added for this user",
+      watched: false,
+      liked: false,
+      stars: 0,
+    });
+  }
+
+  res.status(200).json({ movie: userMovieData });
+});
+
+/**
+ * Add or update a movie review
+ */
+export const addReviews = asyncHandler(async (req, res) => {
+  const { userEmail, movieId, rating, reviewText } = req.body;
+
+  if (!userEmail || !movieId || rating === undefined || !reviewText) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  const user = await userModel.findOne({ email: userEmail });
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  let movie = await movieModel.findOne({ movieId });
+  if (!movie) return res.status(404).json({ message: "Movie not found" });
+
+  // Check if user already reviewed this movie
+  const existingReview = movie.reviews.find((r) => r.userId.equals(user._id));
+
+  if (existingReview) {
+    // Update existing review
+    existingReview.rating = rating;
+    existingReview.reviewText = reviewText;
+    existingReview.createdAt = Date.now();
+  } else {
+    // Add new review
+    movie.reviews.push({
+      userId: user._id,
+      username: user.name,
+      rating,
+      reviewText,
+    });
+  }
+
+  await movie.save();
+  res.status(200).json({ message: "Review added successfully", movie });
+});
+
+/**
+ * Get all reviews for a movie
+ */
+export const getReviews = asyncHandler(async (req, res) => {
+  const { movieId } = req.query;
+
+  if (!movieId) {
+    return res.status(400).json({ message: "Movie ID is required" });
+  }
+
+  const movie = await movieModel.findOne({ movieId });
+
+  if (!movie) return res.status(404).json({ message: "Movie not found" });
+
+  res.status(200).json({ reviews: movie.reviews });
+});
+
+/**
+ * Delete a user's review for a movie
+ */
+export const deleteReview = asyncHandler(async (req, res) => {
+  const { userEmail, movieId } = req.body;
+
+  if (!userEmail || !movieId) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  const user = await userModel.findOne({ email: userEmail });
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  let movie = await movieModel.findOne({ movieId });
+  if (!movie) return res.status(404).json({ message: "Movie not found" });
+
+  // Filter out the review that belongs to the user
+  const updatedReviews = movie.reviews.filter((r) => !r.userId.equals(user._id));
+
+  if (updatedReviews.length === movie.reviews.length) {
+    return res.status(404).json({ message: "Review not found" });
+  }
+
+  movie.reviews = updatedReviews;
+  await movie.save();
+
+  res.status(200).json({ message: "Review deleted successfully", movie });
+});

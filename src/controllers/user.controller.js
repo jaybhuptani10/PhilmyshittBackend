@@ -114,6 +114,27 @@ const userProfile = asyncHandler(async (req, res) => {
         });
     }
 });
+const validateToken = asyncHandler(async (req, res) => {
+    const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Get token from 'Authorization' header
+    console.log(token);
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Not authorized" });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, async (err, userDoc) => {
+      if (err) {
+        return res.status(401).json({ success: false, message: "Token invalid" });
+      }
+
+      const user = await userModel.findById(userDoc.id).select("-password");
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      res.json({ success: true, user });
+    });
+});
 
 
-export { logoutUser, loginUser, userProfile, registerUser };
+
+export { logoutUser, loginUser, userProfile, registerUser,validateToken };

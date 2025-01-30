@@ -7,16 +7,16 @@ const userSchema = new mongoose.Schema({
     },
     email:{
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     password:{
         type: String,
         required: true
     },
-    watchedList: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Movie"
-    }],
+    watchedMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Movie" }],
+    likedMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Movie" }],
+    watchlistMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Movie" }],
     friends:[{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
