@@ -18,6 +18,7 @@ const movieSchema = new mongoose.Schema({
         watched: { type: Boolean, default: false },
         liked: { type: Boolean, default: false },
         stars: { type: Number, min: 0, max: 5, default: 0 },
+        watchlisted: { type: Boolean, default: false },
       },
     ],
     reviews: [reviewSchema], // Store all user reviews for this movie

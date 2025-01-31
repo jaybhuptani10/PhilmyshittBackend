@@ -116,7 +116,6 @@ const userProfile = asyncHandler(async (req, res) => {
 });
 const validateToken = asyncHandler(async (req, res) => {
     const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Get token from 'Authorization' header
-    console.log(token);
     if (!token) {
       return res.status(401).json({ success: false, message: "Not authorized" });
     }

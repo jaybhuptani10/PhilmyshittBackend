@@ -8,7 +8,7 @@ import movieModel from "../models/movie.model.js";
  */
 export const addMovieToUser = asyncHandler(async (req, res) => {
     const { userEmail, movieId, title, watched, liked, stars, watchlisted } = req.body;
-  
+    
     if (!userEmail || !movieId || !title) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -31,40 +31,55 @@ export const addMovieToUser = asyncHandler(async (req, res) => {
       existingUserData.watched = watched;
       existingUserData.liked = liked;
       existingUserData.stars = stars;
+      existingUserData.watchlisted = watchlisted;
     } else {
       // Add new entry for this user
-      movie.users.push({ userId: user._id, watched, liked, stars });
+      movie.users.push({ userId: user._id, watched, liked, stars, watchlisted });
     }
   
     await movie.save();
   
-    // Handle watched and watchlisted logic:
-    // If movie is being added to the watched list, remove it from watchlist if needed
+    // ✅ Handle Watched Movies:
     if (watched) {
       if (!user.watchedMovies.includes(movie._id)) {
         user.watchedMovies.push(movie._id);
       }
       // Remove from watchlist if it's there
-      if (user.watchlistedMovies.includes(movie._id)) {
-        user.watchlistedMovies = user.watchlistedMovies.filter((id) => !id.equals(movie._id));
-      }
+      user.watchlistMovies = user.watchlistMovies.filter((id) => !id.equals(movie._id));
+    } else {
+      // If watched is false, remove from watchedMovies and also remove from likedMovies
+      user.watchedMovies = user.watchedMovies.filter((id) => !id.equals(movie._id));
+      user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id)); // Remove from likedMovies
     }
-  
-    // If movie is being added to the watchlist, remove it from watched list if needed
+
+    // ✅ Handle Watchlist Movies:
     if (watchlisted) {
-      if (!user.watchlistedMovies.includes(movie._id)) {
-        user.watchlistedMovies.push(movie._id);
+      if (!user.watchlistMovies.includes(movie._id)) {
+        user.watchlistMovies.push(movie._id);
       }
       // Remove from watched list if it's there
-      if (user.watchedMovies.includes(movie._id)) {
-        user.watchedMovies = user.watchedMovies.filter((id) => !id.equals(movie._id));
-      }
+      user.watchedMovies = user.watchedMovies.filter((id) => !id.equals(movie._id));
+      user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id)); // Ensure likedMovies is cleared if moved to watchlist
+    } else {
+      // If watchlisted is false, remove from watchlistMovies
+      user.watchlistMovies = user.watchlistMovies.filter((id) => !id.equals(movie._id));
     }
-  
+
+    // ✅ Handle Liked Movies:
+    if (liked && watched) { // A movie can only be liked if it's watched
+      if (!user.likedMovies.includes(movie._id)) {
+        user.likedMovies.push(movie._id);
+      }
+    } else {
+      user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id));
+    }
+
     await user.save();
   
     res.status(200).json({ message: "Movie data updated successfully", movie });
-  });
+});
+
+
   
 
 /**
