@@ -1,9 +1,9 @@
 
 
 export const fetchDataFromApi = async (req, res) => {
-  const { movie } = req.query; // Extract the movie type from query parameters
-  const url = `https://api.themoviedb.org/3/movie/${movie}`;
-  
+  const { type,endpoint } = req.query; // Extract the movie type from query parameters
+  const url = `https://api.themoviedb.org/3/${type}/${endpoint}`;
+
   try {
     const options = {
       method: 'GET',
@@ -24,10 +24,10 @@ export const fetchDataFromApi = async (req, res) => {
   }
 };
 
-export const getMovieInfo = async (req, res) => {
-  const { movie } = req.query; // Extract the movie type from query parameters
- 
-  const url = `https://api.themoviedb.org/3/movie/${movie}`;
+export const getInfo = async (req, res) => {  
+  const { type,id } = req.query; // Extract the movie type from query parameters
+  console.log(type,id);
+  const url = `https://api.themoviedb.org/3/${type}/${id}`;
   
   try {
     const options = {
