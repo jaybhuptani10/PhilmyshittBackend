@@ -26,8 +26,13 @@ export const fetchDataFromApi = async (req, res) => {
 
 export const getInfo = async (req, res) => {  
   const { type,id,sub } = req.query; // Extract the movie type from query parameters
+  let url;
+  if (sub === "") {
+    url = `https://api.themoviedb.org/3/${type}/${id}`;
+  } else if (sub === "credits") {
+    url = `https://api.themoviedb.org/3/${type}/${id}/${sub}`;
+  }
   
-  const url = `https://api.themoviedb.org/3/${type}/${id}/${sub}`;
   
   try {
     const options = {
