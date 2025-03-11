@@ -29,7 +29,7 @@ export const getInfo = async (req, res) => {
   let url;
   if (sub === "") {
     url = `https://api.themoviedb.org/3/${type}/${id}`;
-  } else if (sub === "credits") {
+  } else {
     url = `https://api.themoviedb.org/3/${type}/${id}/${sub}`;
   }
   
