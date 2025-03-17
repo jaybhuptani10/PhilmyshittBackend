@@ -42,7 +42,5 @@ userRouter
   .route("/media/:mediaType/:tmdbId/watchlist")
   .post(authMiddleware, watchlistStatus);
 userRouter.route("/media/lists").get(authMiddleware, userList);
-userRouter
-  .route("/media/:mediaType/:tmdbId/interaction")
-  .get(authMiddleware, checkData);
+userRouter.route("/media").get(authMiddleware, checkData);
 export default userRouter;
