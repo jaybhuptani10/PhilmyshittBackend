@@ -18,10 +18,10 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-const UserMediaInteractionSchema = new Schema(
+const UserMediaInteractionSchema = new mongoose.Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -86,7 +86,4 @@ const UserMediaInteraction = mongoose.model(
   "UserMediaInteraction",
   UserMediaInteractionSchema
 );
-module.exports = {
-  userModel,
-  UserMediaInteraction,
-};
+export { userModel, UserMediaInteraction };

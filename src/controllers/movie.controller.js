@@ -1,6 +1,6 @@
 import asyncHandler from "../utils/asynchandler.js";
 import { ApiResponse } from "../utils/apiresponse.js";
-import userModel from "../models/user.model.js";
+import { userModel, UserMediaInteraction } from "../models/user.model.js";
 import movieModel from "../models/movie.model.js";
 
 /**
@@ -207,10 +207,9 @@ export const deleteReview = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Review deleted successfully", movie });
 });
 
-export const watchStatus = asyncHandler(auth, async (req, res) => {
+export const watchStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId } = req.params;
-    const userId = req.user.id;
+    const { mediaType, tmdbId, userId } = req.params;
 
     let interaction = await UserMediaInteraction.findOne({
       userId,
@@ -243,10 +242,9 @@ export const watchStatus = asyncHandler(auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-export const likedStatus = asyncHandler(auth, async (req, res) => {
+export const likedStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId } = req.params;
-    const userId = req.user.id;
+    const { mediaType, tmdbId, userId } = req.params;
 
     let interaction = await UserMediaInteraction.findOne({
       userId,
@@ -279,10 +277,9 @@ export const likedStatus = asyncHandler(auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-export const watchlistStatus = asyncHandler(auth, async (req, res) => {
+export const watchlistStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId } = req.params;
-    const userId = req.user.id;
+    const { mediaType, tmdbId, userId } = req.params;
 
     let interaction = await UserMediaInteraction.findOne({
       userId,
@@ -315,9 +312,9 @@ export const watchlistStatus = asyncHandler(auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-export const userList = asyncHandler(auth, async (req, res) => {
+export const userList = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { userId } = req.params;
 
     const watched = await UserMediaInteraction.find({
       userId,
