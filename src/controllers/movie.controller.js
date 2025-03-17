@@ -209,7 +209,8 @@ export const deleteReview = asyncHandler(async (req, res) => {
 
 export const watchStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.params;
+    const { mediaType, tmdbId } = req.params;
+    const { userId } = req.query;
 
     let interaction = await UserMediaInteraction.findOne({
       userId,
@@ -244,8 +245,8 @@ export const watchStatus = asyncHandler(async (req, res) => {
 });
 export const likedStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.params;
-
+    const { mediaType, tmdbId } = req.params;
+    const { userId } = req.query;
     let interaction = await UserMediaInteraction.findOne({
       userId,
       tmdbId: Number(tmdbId),
@@ -279,7 +280,8 @@ export const likedStatus = asyncHandler(async (req, res) => {
 });
 export const watchlistStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.params;
+    const { mediaType, tmdbId } = req.params;
+    const { userId } = req.query;
 
     let interaction = await UserMediaInteraction.findOne({
       userId,
@@ -314,7 +316,7 @@ export const watchlistStatus = asyncHandler(async (req, res) => {
 });
 export const userList = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.query;
 
     const watched = await UserMediaInteraction.find({
       userId,
@@ -363,7 +365,11 @@ export const userList = asyncHandler(async (req, res) => {
 // Get detailed information about a specific user-media interaction
 export const checkData = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.params;
+    const { mediaType, tmdbId } = req.params;
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
 
     const interaction = await UserMediaInteraction.findOne({
       userId,
