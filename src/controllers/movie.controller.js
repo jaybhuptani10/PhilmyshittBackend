@@ -210,23 +210,16 @@ export const deleteReview = asyncHandler(async (req, res) => {
 export const watchStatus = asyncHandler(async (req, res) => {
   try {
     const { mediaType, tmdbId } = req.params;
-    const { userId } = req.query;
+    const userId = req.user.id; // Extract user ID from token
 
-    let interaction = await UserMediaInteraction.findOne({
-      userId,
-      tmdbId: Number(tmdbId),
-      mediaType,
-    });
+    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
 
     if (!interaction) {
       interaction = new UserMediaInteraction({
         userId,
-        tmdbId: Number(tmdbId),
+        tmdbId,
         mediaType,
-        watched: {
-          status: true,
-          date: new Date(),
-        },
+        watched: { status: true, date: new Date() },
       });
     } else {
       interaction.watched.status = !interaction.watched.status;
@@ -236,32 +229,26 @@ export const watchStatus = asyncHandler(async (req, res) => {
     }
 
     await interaction.save();
-
     res.json({ success: true, watched: interaction.watched.status });
   } catch (error) {
-    console.error(error);
+    console.error("Server Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 export const likedStatus = asyncHandler(async (req, res) => {
   try {
     const { mediaType, tmdbId } = req.params;
-    const { userId } = req.query;
-    let interaction = await UserMediaInteraction.findOne({
-      userId,
-      tmdbId: Number(tmdbId),
-      mediaType,
-    });
+    const userId = req.user.id; // Extract user ID from token
+
+    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
 
     if (!interaction) {
       interaction = new UserMediaInteraction({
         userId,
-        tmdbId: Number(tmdbId),
+        tmdbId,
         mediaType,
-        liked: {
-          status: true,
-          date: new Date(),
-        },
+        liked: { status: true, date: new Date() },
       });
     } else {
       interaction.liked.status = !interaction.liked.status;
@@ -271,33 +258,25 @@ export const likedStatus = asyncHandler(async (req, res) => {
     }
 
     await interaction.save();
-
     res.json({ success: true, liked: interaction.liked.status });
   } catch (error) {
-    console.error(error);
+    console.error("Server Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 export const watchlistStatus = asyncHandler(async (req, res) => {
   try {
     const { mediaType, tmdbId } = req.params;
-    const { userId } = req.query;
+    const userId = req.user.id; // Extract user ID from token
 
-    let interaction = await UserMediaInteraction.findOne({
-      userId,
-      tmdbId: Number(tmdbId),
-      mediaType,
-    });
+    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
 
     if (!interaction) {
       interaction = new UserMediaInteraction({
         userId,
-        tmdbId: Number(tmdbId),
+        tmdbId,
         mediaType,
-        watchlisted: {
-          status: true,
-          date: new Date(),
-        },
+        watchlisted: { status: true, date: new Date() },
       });
     } else {
       interaction.watchlisted.status = !interaction.watchlisted.status;
@@ -307,10 +286,9 @@ export const watchlistStatus = asyncHandler(async (req, res) => {
     }
 
     await interaction.save();
-
     res.json({ success: true, watchlisted: interaction.watchlisted.status });
   } catch (error) {
-    console.error(error);
+    console.error("Server Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
