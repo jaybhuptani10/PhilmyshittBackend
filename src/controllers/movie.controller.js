@@ -360,3 +360,38 @@ export const userList = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+// Get detailed information about a specific user-media interaction
+export const checkData = asyncHandler(async (req, res) => {
+  try {
+    const { mediaType, tmdbId } = req.params;
+    const userId = req.user.id;
+
+    const interaction = await UserMediaInteraction.findOne({
+      userId,
+      tmdbId: Number(tmdbId),
+      mediaType,
+    });
+
+    if (!interaction) {
+      return res.json({
+        watched: false,
+        liked: false,
+        watchlisted: false,
+        rating: null,
+        watchProgress: 0,
+      });
+    }
+
+    res.json({
+      watched: interaction.watched.status || false,
+      liked: interaction.liked.status || false,
+      watchlisted: interaction.watchlisted.status || false,
+      rating: interaction.rating.score,
+      watchProgress: interaction.watchProgress,
+      lastWatched: interaction.lastWatched,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});

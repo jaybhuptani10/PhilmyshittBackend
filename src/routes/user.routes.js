@@ -10,6 +10,7 @@ import {
 import {
   addMovieToUser,
   addReviews,
+  checkData,
   deleteReview,
   getAddedDetails,
   getReviews,
@@ -34,4 +35,5 @@ userRouter.route("/media/:mediaType/:tmdbId/watched").post(watchStatus);
 userRouter.route("/media/:mediaType/:tmdbId/like").post(likedStatus);
 userRouter.route("/media/:mediaType/:tmdbId/watchlist").post(watchlistStatus);
 userRouter.route("/media/lists").get(userList);
+userRouter.route("/media/:mediaType/:tmdbId/interaction").get(checkData);
 export default userRouter;
