@@ -363,8 +363,7 @@ export const userList = asyncHandler(async (req, res) => {
 // Get detailed information about a specific user-media interaction
 export const checkData = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId } = req.params;
-    const userId = req.user.id;
+    const { mediaType, tmdbId, userId } = req.params;
 
     const interaction = await UserMediaInteraction.findOne({
       userId,
