@@ -1,17 +1,17 @@
 import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    username: { type: String, required: true }, // To display user’s name
-    rating: { type: Number, min: 0, max: 5, required: true },
-    reviewText: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
-  });
-  
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  username: { type: String, required: true }, // To display user’s name
+  rating: { type: Number, min: 0, max: 5, required: true },
+  reviewText: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
 
-const movieSchema = new mongoose.Schema({
-    movieId: { type: String, required: true, unique: true },  // TMDB ID or custom ID
-    title: { type: String, required: true }, // Movie title
+const movieSchema = new mongoose.Schema(
+  {
+    movieId: { type: String, required: true, unique: true }, // TMDB ID or custom ID
+
     users: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -22,9 +22,9 @@ const movieSchema = new mongoose.Schema({
       },
     ],
     reviews: [reviewSchema], // Store all user reviews for this movie
-    
-    
-}, { timestamps: true });
+  },
+  { timestamps: true }
+);
 
 const movieModel = mongoose.model("Movie", movieSchema);
 export default movieModel;
