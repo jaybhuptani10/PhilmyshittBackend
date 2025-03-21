@@ -208,32 +208,32 @@ export const deleteReview = asyncHandler(async (req, res) => {
 });
 
 export const watchStatus = asyncHandler(async (req, res) => {
-  try {
-    const { mediaType, tmdbId, userId } = req.params;
-    // Extract user ID from token
+  const { userId } = req.body;
+  const { mediaType, tmdbId } = req.params; // ✅ Extract from params
 
-    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
-
-    if (!interaction) {
-      interaction = new UserMediaInteraction({
-        userId,
-        tmdbId,
-        mediaType,
-        watched: { status: true, date: new Date() },
-      });
-    } else {
-      interaction.watched.status = !interaction.watched.status;
-      if (interaction.watched.status) {
-        interaction.watched.date = new Date();
-      }
-    }
-
-    await interaction.save();
-    res.json({ success: true, watched: interaction.watched.status });
-  } catch (error) {
-    console.error("Server Error:", error);
-    res.status(500).json({ message: "Server error" });
+  if (!userId) {
+    return res.status(400).json({ message: "Missing userId" });
   }
+
+  const user = await userModel.findById(userId);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  let movie = await movieModel.findOne({ movieId: tmdbId });
+
+  if (!movie) {
+    movie = new movieModel({ movieId: tmdbId, mediaType, users: [] });
+  }
+
+  // Toggle watched status
+  const userMovie = movie.users.find((u) => u.userId.toString() === userId);
+  if (userMovie) {
+    userMovie.watched = !userMovie.watched;
+  } else {
+    movie.users.push({ userId, watched: true });
+  }
+
+  await movie.save();
+  res.status(200).json({ watched: userMovie ? userMovie.watched : true });
 });
 
 export const likedStatus = asyncHandler(async (req, res) => {
