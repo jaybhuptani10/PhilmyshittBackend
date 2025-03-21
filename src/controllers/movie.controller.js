@@ -206,44 +206,10 @@ export const deleteReview = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Review deleted successfully", movie });
 });
 
-export const watchStatus = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
-  const { mediaType, tmdbId } = req.params; // ✅ Extract from params
-
-  if (!userId) {
-    return res.status(400).json({ message: "Missing userId" });
-  }
-
-  const user = await userModel.findById(userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  let interaction = await UserMediaInteraction.findOne({
-    userId,
-    tmdbId,
-    mediaType,
-  });
-
-  if (!interaction) {
-    interaction = new UserMediaInteraction({
-      userId,
-      tmdbId,
-      mediaType,
-      watched: { status: true, date: new Date() },
-    });
-  } else {
-    // Toggle watched status
-    interaction.watched.status = !interaction.watched.status;
-    interaction.watched.date = interaction.watched.status ? new Date() : null;
-  }
-
-  await interaction.save();
-  res.status(200).json({ watched: interaction.watched.status });
-});
-
 export const likedStatus = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.body; // Extract userId from request body
-    const { mediaType, tmdbId } = req.params; // Extract from params
+    const { userId } = req.body;
+    const { mediaType, tmdbId } = req.params;
 
     if (!userId) {
       return res.status(400).json({ message: "Missing userId" });
@@ -261,10 +227,19 @@ export const likedStatus = asyncHandler(async (req, res) => {
         tmdbId,
         mediaType,
         liked: { status: true, date: new Date() },
+        watched: { status: true, date: new Date() }, // Auto-enable watched
+        watchlisted: { status: false, date: null }, // Disable watchlisted
       });
     } else {
       interaction.liked.status = !interaction.liked.status;
       interaction.liked.date = interaction.liked.status ? new Date() : null;
+
+      if (interaction.liked.status) {
+        interaction.watched.status = true; // Automatically enable watched
+        interaction.watched.date = new Date();
+        interaction.watchlisted.status = false; // Disable watchlisted
+        interaction.watchlisted.date = null;
+      }
     }
 
     await interaction.save();
@@ -277,8 +252,8 @@ export const likedStatus = asyncHandler(async (req, res) => {
 
 export const watchlistStatus = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.body; // Extract userId from request body
-    const { mediaType, tmdbId } = req.params; // Extract from params
+    const { userId } = req.body;
+    const { mediaType, tmdbId } = req.params;
 
     if (!userId) {
       return res.status(400).json({ message: "Missing userId" });
@@ -296,18 +271,68 @@ export const watchlistStatus = asyncHandler(async (req, res) => {
         tmdbId,
         mediaType,
         watchlisted: { status: true, date: new Date() },
+        watched: { status: false, date: null }, // Disable watched
+        liked: { status: false, date: null }, // Disable liked
       });
     } else {
       interaction.watchlisted.status = !interaction.watchlisted.status;
       interaction.watchlisted.date = interaction.watchlisted.status
         ? new Date()
         : null;
+
+      if (interaction.watchlisted.status) {
+        interaction.watched.status = false; // Disable watched
+        interaction.watched.date = null;
+        interaction.liked.status = false; // Disable liked
+        interaction.liked.date = null;
+      }
     }
 
     await interaction.save();
     res.json({ success: true, watchlisted: interaction.watchlisted.status });
   } catch (error) {
     console.error("Error in watchlistStatus:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+export const watchStatus = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const { mediaType, tmdbId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    let interaction = await UserMediaInteraction.findOne({
+      userId,
+      tmdbId,
+      mediaType,
+    });
+
+    if (!interaction) {
+      interaction = new UserMediaInteraction({
+        userId,
+        tmdbId,
+        mediaType,
+        watched: { status: true, date: new Date() },
+        watchlisted: { status: false, date: null }, // Disable watchlisted
+      });
+    } else {
+      interaction.watched.status = !interaction.watched.status;
+      interaction.watched.date = interaction.watched.status ? new Date() : null;
+
+      if (interaction.watched.status) {
+        interaction.watchlisted.status = false; // Disable watchlisted
+        interaction.watchlisted.date = null;
+      }
+    }
+
+    await interaction.save();
+    res.json({ success: true, watched: interaction.watched.status });
+  } catch (error) {
+    console.error("Error in watchStatus:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
