@@ -1,7 +1,6 @@
 import asyncHandler from "../utils/asynchandler.js";
 import { ApiResponse } from "../utils/apiresponse.js";
 import { userModel, UserMediaInteraction } from "../models/user.model.js";
-import movieModel from "../models/movie.model.js";
 
 /**
  * Add or update movie details for a user
@@ -218,22 +217,27 @@ export const watchStatus = asyncHandler(async (req, res) => {
   const user = await userModel.findById(userId);
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  let movie = await movieModel.findOne({ movieId: tmdbId });
+  let interaction = await UserMediaInteraction.findOne({
+    userId,
+    tmdbId,
+    mediaType,
+  });
 
-  if (!movie) {
-    movie = new movieModel({ movieId: tmdbId, mediaType, users: [] });
-  }
-
-  // Toggle watched status
-  const userMovie = movie.users.find((u) => u.userId.toString() === userId);
-  if (userMovie) {
-    userMovie.watched = !userMovie.watched;
+  if (!interaction) {
+    interaction = new UserMediaInteraction({
+      userId,
+      tmdbId,
+      mediaType,
+      watched: { status: true, date: new Date() },
+    });
   } else {
-    movie.users.push({ userId, watched: true });
+    // Toggle watched status
+    interaction.watched.status = !interaction.watched.status;
+    interaction.watched.date = interaction.watched.status ? new Date() : null;
   }
 
-  await movie.save();
-  res.status(200).json({ watched: userMovie ? userMovie.watched : true });
+  await interaction.save();
+  res.status(200).json({ watched: interaction.watched.status });
 });
 
 export const likedStatus = asyncHandler(async (req, res) => {
