@@ -242,10 +242,18 @@ export const watchStatus = asyncHandler(async (req, res) => {
 
 export const likedStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.params;
-    // Extract user ID from token
+    const { userId } = req.body; // Extract userId from request body
+    const { mediaType, tmdbId } = req.params; // Extract from params
 
-    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    let interaction = await UserMediaInteraction.findOne({
+      userId,
+      tmdbId,
+      mediaType,
+    });
 
     if (!interaction) {
       interaction = new UserMediaInteraction({
@@ -256,24 +264,31 @@ export const likedStatus = asyncHandler(async (req, res) => {
       });
     } else {
       interaction.liked.status = !interaction.liked.status;
-      if (interaction.liked.status) {
-        interaction.liked.date = new Date();
-      }
+      interaction.liked.date = interaction.liked.status ? new Date() : null;
     }
 
     await interaction.save();
     res.json({ success: true, liked: interaction.liked.status });
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error("Error in likedStatus:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 export const watchlistStatus = asyncHandler(async (req, res) => {
   try {
-    const { mediaType, tmdbId, userId } = req.query;
-    // Extract user ID from token
+    const { userId } = req.body; // Extract userId from request body
+    const { mediaType, tmdbId } = req.params; // Extract from params
 
-    let interaction = await UserMediaInteraction.findOne({ userId, tmdbId });
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    let interaction = await UserMediaInteraction.findOne({
+      userId,
+      tmdbId,
+      mediaType,
+    });
 
     if (!interaction) {
       interaction = new UserMediaInteraction({
@@ -284,66 +299,68 @@ export const watchlistStatus = asyncHandler(async (req, res) => {
       });
     } else {
       interaction.watchlisted.status = !interaction.watchlisted.status;
-      if (interaction.watchlisted.status) {
-        interaction.watchlisted.date = new Date();
-      }
+      interaction.watchlisted.date = interaction.watchlisted.status
+        ? new Date()
+        : null;
     }
 
     await interaction.save();
     res.json({ success: true, watchlisted: interaction.watchlisted.status });
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error("Error in watchlistStatus:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 export const userList = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId } = req.body; // Extract userId from request body
 
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    // Fetch user interactions sorted by date
     const watched = await UserMediaInteraction.find({
       userId,
       "watched.status": true,
-    }).sort({ "watched.date": -1 });
+    })
+      .sort({ "watched.date": -1 })
+      .select("tmdbId mediaType");
 
     const liked = await UserMediaInteraction.find({
       userId,
       "liked.status": true,
-    }).sort({ "liked.date": -1 });
+    })
+      .sort({ "liked.date": -1 })
+      .select("tmdbId mediaType");
 
     const watchlist = await UserMediaInteraction.find({
       userId,
       "watchlisted.status": true,
-    }).sort({ "watchlisted.date": -1 });
+    })
+      .sort({ "watchlisted.date": -1 })
+      .select("tmdbId mediaType");
 
     const rated = await UserMediaInteraction.find({
       userId,
       "rating.score": { $ne: null },
-    }).sort({ "rating.date": -1 });
+    })
+      .sort({ "rating.date": -1 })
+      .select("tmdbId mediaType rating.score");
 
     res.json({
-      watched: watched.map((item) => ({
-        tmdbId: item.tmdbId,
-        mediaType: item.mediaType,
-      })),
-      liked: liked.map((item) => ({
-        tmdbId: item.tmdbId,
-        mediaType: item.mediaType,
-      })),
-      watchlist: watchlist.map((item) => ({
-        tmdbId: item.tmdbId,
-        mediaType: item.mediaType,
-      })),
-      rated: rated.map((item) => ({
-        tmdbId: item.tmdbId,
-        mediaType: item.mediaType,
-        score: item.rating.score,
-      })),
+      watched,
+      liked,
+      watchlist,
+      rated,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in userList:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 // Get detailed information about a specific user-media interaction
 export const checkData = asyncHandler(async (req, res) => {
   try {
