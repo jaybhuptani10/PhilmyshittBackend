@@ -81,9 +81,9 @@ export const getSeriesInfo = async (req, res) => {
   }
 };
 export const getSearchedMovie = async (req, res) => {
-  const { result } = req.query; // Extract the movie type from query parameters
+  const { result,pagenum } = req.query; // Extract the movie type from query parameters
 
-  const url = `https://api.themoviedb.org/3/search/${result}`;
+  const url = `https://api.themoviedb.org/3/search/multi/${"query"=result}&${"page"=pagenum}}`;
   
   
   try {
