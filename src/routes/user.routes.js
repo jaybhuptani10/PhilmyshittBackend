@@ -8,13 +8,13 @@ import {
   validateToken,
 } from "../controllers/user.controller.js";
 import {
-  addMovieToUser,
   addReviews,
   checkData,
   deleteReview,
-  getAddedDetails,
+  getMovieRating,
   getReviews,
   likedStatus,
+  rateMovie,
   userList,
   watchlistStatus,
   watchStatus,
@@ -27,8 +27,7 @@ userRouter.route("/login").post(loginUser);
 userRouter.route("/logout").post(logoutUser);
 
 userRouter.route("/profile").get(authMiddleware, userProfile);
-userRouter.route("/addMovieToUser").post(authMiddleware, addMovieToUser);
-userRouter.route("/getAddedDetails").get(authMiddleware, getAddedDetails);
+
 userRouter.route("/addReviews").post(authMiddleware, addReviews);
 userRouter.route("/getReviews").get(authMiddleware, getReviews);
 userRouter.route("/deleteReview").post(authMiddleware, deleteReview);
@@ -43,4 +42,6 @@ userRouter
   .post(authMiddleware, watchlistStatus);
 userRouter.route("/media/lists").get(authMiddleware, userList);
 userRouter.route("/media").get(authMiddleware, checkData);
+userRouter.route("/rate").post(authMiddleware, rateMovie);
+userRouter.route("/rating/:mediaType/:tmdbId", getMovieRating);
 export default userRouter;

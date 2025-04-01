@@ -5,120 +5,10 @@ import { userModel, UserMediaInteraction } from "../models/user.model.js";
 /**
  * Add or update movie details for a user
  */
-export const addMovieToUser = asyncHandler(async (req, res) => {
-  const { userEmail, movieId, title, watched, liked, stars, watchlisted } =
-    req.body;
-
-  if (!userEmail || !movieId || !title) {
-    return res.status(400).json({ message: "Missing required fields" });
-  }
-
-  const user = await userModel.findOne({ email: userEmail });
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  let movie = await movieModel.findOne({ movieId });
-
-  if (!movie) {
-    // If movie doesn't exist, create a new movie entry
-    movie = new movieModel({ movieId, title, users: [] });
-  }
-
-  // Check if user already has an entry for this movie
-  const existingUserData = movie.users.find((u) => u.userId.equals(user._id));
-
-  if (existingUserData) {
-    // Update existing user entry
-    existingUserData.watched = watched;
-    existingUserData.liked = liked;
-    existingUserData.stars = stars;
-    existingUserData.watchlisted = watchlisted;
-  } else {
-    // Add new entry for this user
-    movie.users.push({ userId: user._id, watched, liked, stars, watchlisted });
-  }
-
-  await movie.save();
-
-  // ✅ Handle Watched Movies:
-  if (watched) {
-    if (!user.watchedMovies.includes(movie._id)) {
-      user.watchedMovies.push(movie._id);
-    }
-    // Remove from watchlist if it's there
-    user.watchlistMovies = user.watchlistMovies.filter(
-      (id) => !id.equals(movie._id)
-    );
-  } else {
-    // If watched is false, remove from watchedMovies and also remove from likedMovies
-    user.watchedMovies = user.watchedMovies.filter(
-      (id) => !id.equals(movie._id)
-    );
-    user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id)); // Remove from likedMovies
-  }
-
-  // ✅ Handle Watchlist Movies:
-  if (watchlisted) {
-    if (!user.watchlistMovies.includes(movie._id)) {
-      user.watchlistMovies.push(movie._id);
-    }
-    // Remove from watched list if it's there
-    user.watchedMovies = user.watchedMovies.filter(
-      (id) => !id.equals(movie._id)
-    );
-    user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id)); // Ensure likedMovies is cleared if moved to watchlist
-  } else {
-    // If watchlisted is false, remove from watchlistMovies
-    user.watchlistMovies = user.watchlistMovies.filter(
-      (id) => !id.equals(movie._id)
-    );
-  }
-
-  // ✅ Handle Liked Movies:
-  if (liked && watched) {
-    // A movie can only be liked if it's watched
-    if (!user.likedMovies.includes(movie._id)) {
-      user.likedMovies.push(movie._id);
-    }
-  } else {
-    user.likedMovies = user.likedMovies.filter((id) => !id.equals(movie._id));
-  }
-
-  await user.save();
-
-  res.status(200).json({ message: "Movie data updated successfully", movie });
-});
 
 /**
  * Get movie details added by a user
  */
-export const getAddedDetails = asyncHandler(async (req, res) => {
-  const { userEmail, movieId } = req.query;
-
-  if (!userEmail || !movieId) {
-    return res
-      .status(400)
-      .json({ message: "Missing required query parameters" });
-  }
-
-  const user = await userModel.findOne({ email: userEmail });
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  const movie = await movieModel.findOne({ movieId });
-  if (!movie) return res.status(404).json({ message: "Movie not found" });
-
-  const userMovieData = movie.users.find((u) => u.userId.equals(user._id));
-
-  if (!userMovieData) {
-    return res.status(404).json({
-      message: "Movie not added for this user",
-      watched: false,
-      liked: false,
-      stars: 0,
-    });
-  }
-
-  res.status(200).json({ movie: userMovieData });
-});
 
 /**
  * Add or update a movie review
@@ -420,6 +310,143 @@ export const checkData = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+export const rateMovie = asyncHandler(async (req, res) => {
+  try {
+    const { userId, tmdbId, mediaType, rating } = req.body;
+
+    if (!userId || !tmdbId || !mediaType || rating === undefined) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Validate rating is between 0 and 5 (allow decimals)
+    const ratingValue = parseFloat(rating);
+    if (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5) {
+      return res.status(400).json({
+        message: "Rating must be a number between 0 and 5",
+      });
+    }
+
+    // Find or create the user-media interaction record
+    let interaction = await UserMediaInteraction.findOne({
+      userId,
+      tmdbId,
+      mediaType,
+    });
+
+    if (!interaction) {
+      interaction = new UserMediaInteraction({
+        userId,
+        tmdbId,
+        mediaType,
+        rating: {
+          score: ratingValue,
+          date: new Date(),
+        },
+        // If user rates something, it's assumed they watched it
+        watched: {
+          status: true,
+          date: new Date(),
+        },
+      });
+    } else {
+      // Update existing rating
+      interaction.rating = {
+        score: ratingValue,
+        date: new Date(),
+      };
+
+      // If user is rating the content, ensure it's marked as watched
+      if (ratingValue > 0) {
+        interaction.watched.status = true;
+        interaction.watched.date = interaction.watched.date || new Date();
+      }
+    }
+
+    await interaction.save();
+
+    // Also update the movie model for backward compatibility
+    const user = await userModel.findById(userId);
+    if (user) {
+      let movie = await movieModel.findOne({ movieId: tmdbId });
+
+      if (movie) {
+        // Check if user already has an entry for this movie
+        const existingUserData = movie.users.find((u) =>
+          u.userId.equals(user._id)
+        );
+
+        if (existingUserData) {
+          // Update existing user entry
+          existingUserData.stars = ratingValue;
+          if (ratingValue > 0) {
+            existingUserData.watched = true;
+          }
+        } else {
+          // Add new entry for this user
+          movie.users.push({
+            userId: user._id,
+            watched: ratingValue > 0,
+            stars: ratingValue,
+          });
+        }
+
+        await movie.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Rating updated successfully",
+      rating: ratingValue,
+    });
+  } catch (error) {
+    console.error("Error in rateMovie:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * Get average rating for a movie
+ */
+export const getMovieRating = asyncHandler(async (req, res) => {
+  try {
+    const { tmdbId, mediaType } = req.params;
+
+    if (!tmdbId || !mediaType) {
+      return res.status(400).json({ message: "Missing required parameters" });
+    }
+
+    // Find all ratings for this media
+    const interactions = await UserMediaInteraction.find({
+      tmdbId,
+      mediaType,
+      "rating.score": { $gt: 0 },
+    });
+
+    if (!interactions || interactions.length === 0) {
+      return res.json({
+        averageRating: 0,
+        totalRatings: 0,
+      });
+    }
+
+    // Calculate average rating
+    const totalScore = interactions.reduce(
+      (sum, item) => sum + item.rating.score,
+      0
+    );
+    const averageRating = totalScore / interactions.length;
+
+    res.json({
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      totalRatings: interactions.length,
+    });
+  } catch (error) {
+    console.error("Error in getMovieRating:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
