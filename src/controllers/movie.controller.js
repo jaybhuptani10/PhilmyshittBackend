@@ -415,22 +415,25 @@ export const rateMovie = asyncHandler(async (req, res) => {
 export const getMovieRating = asyncHandler(async (req, res) => {
   try {
     const { tmdbId, mediaType } = req.params;
+    const { userId } = req.query; // Get userId from query params
 
     if (!tmdbId || !mediaType) {
       return res.status(400).json({ message: "Missing required parameters" });
     }
 
-    // Find all ratings for this media
+    // Fetch all ratings for this media
     const interactions = await UserMediaInteraction.find({
       tmdbId,
       mediaType,
       "rating.score": { $gt: 0 },
     });
 
+    // If no ratings exist
     if (!interactions || interactions.length === 0) {
       return res.json({
         averageRating: 0,
         totalRatings: 0,
+        userRating: null, // User hasn't rated it
       });
     }
 
@@ -441,9 +444,21 @@ export const getMovieRating = asyncHandler(async (req, res) => {
     );
     const averageRating = totalScore / interactions.length;
 
+    // Find the user's rating (if they have rated)
+    let userRating = null;
+    if (userId) {
+      const userInteraction = interactions.find((item) =>
+        item.userId.equals(userId)
+      );
+      if (userInteraction) {
+        userRating = userInteraction.rating.score;
+      }
+    }
+
     res.json({
       averageRating: parseFloat(averageRating.toFixed(1)),
       totalRatings: interactions.length,
+      userRating, // Send user's rating
     });
   } catch (error) {
     console.error("Error in getMovieRating:", error);
