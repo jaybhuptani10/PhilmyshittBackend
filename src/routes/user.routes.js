@@ -43,5 +43,7 @@ userRouter
 userRouter.route("/media/lists").get(authMiddleware, userList);
 userRouter.route("/media").get(authMiddleware, checkData);
 userRouter.route("/rate").post(authMiddleware, rateMovie);
-userRouter.route("/rating/:mediaType/:tmdbId", getMovieRating);
+userRouter
+  .route("/rating/:mediaType/:tmdbId")
+  .get(authMiddleware, getMovieRating);
 export default userRouter;
