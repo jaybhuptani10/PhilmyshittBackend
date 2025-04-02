@@ -330,14 +330,21 @@ export const rateMovie = asyncHandler(async (req, res) => {
       });
     }
 
-    // Find or create the user-media interaction record
+    // Find existing rating for this user and movie
     let interaction = await UserMediaInteraction.findOne({
       userId,
       tmdbId,
       mediaType,
     });
 
-    if (!interaction) {
+    if (interaction) {
+      // Update existing rating
+      interaction.rating = {
+        score: ratingValue,
+        date: new Date(),
+      };
+    } else {
+      // Create new entry if not found
       interaction = new UserMediaInteraction({
         userId,
         tmdbId,
@@ -346,62 +353,19 @@ export const rateMovie = asyncHandler(async (req, res) => {
           score: ratingValue,
           date: new Date(),
         },
-        // If user rates something, it's assumed they watched it
         watched: {
           status: true,
           date: new Date(),
         },
       });
-    } else {
-      // Update existing rating
-      interaction.rating = {
-        score: ratingValue,
-        date: new Date(),
-      };
-
-      // If user is rating the content, ensure it's marked as watched
-      if (ratingValue > 0) {
-        interaction.watched.status = true;
-        interaction.watched.date = interaction.watched.date || new Date();
-      }
     }
 
     await interaction.save();
 
-    // Also update the movie model for backward compatibility
-    const user = await userModel.findById(userId);
-    if (user) {
-      let movie = await UserMediaInteraction.findOne({ movieId: tmdbId });
-
-      if (movie) {
-        // Check if user already has an entry for this movie
-        const existingUserData = movie.users.find((u) =>
-          u.userId.equals(user._id)
-        );
-
-        if (existingUserData) {
-          // Update existing user entry
-          existingUserData.stars = ratingValue;
-          if (ratingValue > 0) {
-            existingUserData.watched = true;
-          }
-        } else {
-          // Add new entry for this user
-          movie.users.push({
-            userId: user._id,
-            watched: ratingValue > 0,
-            stars: ratingValue,
-          });
-        }
-
-        await movie.save();
-      }
-    }
-
     res.json({
       success: true,
       message: "Rating updated successfully",
-      rating: ratingValue,
+      userRating: ratingValue, // Return user's rating
     });
   } catch (error) {
     console.error("Error in rateMovie:", error);
@@ -412,28 +376,37 @@ export const rateMovie = asyncHandler(async (req, res) => {
 /**
  * Get average rating for a movie
  */
+import mongoose from "mongoose";
+
 export const getMovieRating = asyncHandler(async (req, res) => {
   try {
     const { tmdbId, mediaType } = req.params;
-    const { userId } = req.query; // Get userId from query params
+    let { userId } = req.query; // Get userId from query params
 
     if (!tmdbId || !mediaType) {
       return res.status(400).json({ message: "Missing required parameters" });
     }
 
-    // Fetch all ratings for this media
+    // Validate & Convert userId to ObjectId if provided
+    if (userId) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: "Invalid userId format" });
+      }
+      userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Fetch all ratings for this movie
     const interactions = await UserMediaInteraction.find({
       tmdbId,
       mediaType,
       "rating.score": { $gt: 0 },
     });
 
-    // If no ratings exist
-    if (!interactions || interactions.length === 0) {
+    if (!interactions.length) {
       return res.json({
         averageRating: 0,
         totalRatings: 0,
-        userRating: null, // User hasn't rated it
+        userRating: null,
       });
     }
 
@@ -447,9 +420,12 @@ export const getMovieRating = asyncHandler(async (req, res) => {
     // Find the user's rating (if they have rated)
     let userRating = null;
     if (userId) {
-      const userInteraction = interactions.find((item) =>
-        item.userId.equals(userId)
-      );
+      const userInteraction = await UserMediaInteraction.findOne({
+        userId,
+        tmdbId,
+        mediaType,
+      });
+
       if (userInteraction) {
         userRating = userInteraction.rating.score;
       }
@@ -458,7 +434,7 @@ export const getMovieRating = asyncHandler(async (req, res) => {
     res.json({
       averageRating: parseFloat(averageRating.toFixed(1)),
       totalRatings: interactions.length,
-      userRating, // Send user's rating
+      userRating, // Return user's specific rating
     });
   } catch (error) {
     console.error("Error in getMovieRating:", error);
