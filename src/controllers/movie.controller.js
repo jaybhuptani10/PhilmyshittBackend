@@ -371,7 +371,7 @@ export const rateMovie = asyncHandler(async (req, res) => {
     // Also update the movie model for backward compatibility
     const user = await userModel.findById(userId);
     if (user) {
-      let movie = await movieModel.findOne({ movieId: tmdbId });
+      let movie = await UserMediaInteraction.findOne({ movieId: tmdbId });
 
       if (movie) {
         // Check if user already has an entry for this movie
