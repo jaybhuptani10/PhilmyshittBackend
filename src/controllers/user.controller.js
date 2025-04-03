@@ -1,5 +1,5 @@
 import asyncHandler from "../utils/asynchandler.js";
-import { userModel, UserMediaInteraction } from "../models/user.model.js";
+import { userModel } from "../models/user.model.js"; // Use named import
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/apiresponse.js";
@@ -103,15 +103,15 @@ const userProfile = asyncHandler(async (req, res) => {
           error: err.message,
         });
       }
-      const user = await userModel.findById(userDoc.id);
+      const user = await userModel.findById(userDoc.id).select("-password");
       if (!user) {
         return res.status(404).json({
           success: false,
           message: "User not found",
         });
       }
-      const { name, email, id } = user;
-      res.json({ name, email, id });
+      const { name, email, id, mediaInteractions } = user;
+      res.json({ name, email, id, mediaInteractions });
     });
   } catch (e) {
     console.error("Server error:", e);
