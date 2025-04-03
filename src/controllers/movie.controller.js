@@ -277,33 +277,25 @@ export const rateMovie = asyncHandler(async (req, res) => {
 /**
  * Get average rating for a movie
  */
-import mongoose from "mongoose";
-
 export const getMovieRating = asyncHandler(async (req, res) => {
   try {
     const { tmdbId, mediaType } = req.params;
-    let { userId } = req.query; // Get userId from query params
+    let { userId } = req.query;
+
+    console.log("Received Request: ", { tmdbId, mediaType, userId });
 
     if (!tmdbId || !mediaType) {
       return res.status(400).json({ message: "Missing required parameters" });
     }
 
-    // Validate & Convert userId to ObjectId if provided
-    if (userId) {
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: "Invalid userId format" });
-      }
-      userId = new mongoose.Types.ObjectId(userId);
-    }
-
-    // Fetch all ratings for this movie
-    const interactions = await UserMediaInteraction.find({
-      tmdbId,
-      mediaType,
-      "rating.score": { $gt: 0 },
+    // Fetch all users with ratings for this movie
+    const usersWithRatings = await userModel.find({
+      "mediaInteractions.tmdbId": Number(tmdbId),
+      "mediaInteractions.mediaType": mediaType,
+      "mediaInteractions.rating.score": { $gt: 0 },
     });
 
-    if (!interactions.length) {
+    if (!usersWithRatings.length) {
       return res.json({
         averageRating: 0,
         totalRatings: 0,
@@ -312,30 +304,45 @@ export const getMovieRating = asyncHandler(async (req, res) => {
     }
 
     // Calculate average rating
-    const totalScore = interactions.reduce(
-      (sum, item) => sum + item.rating.score,
-      0
-    );
-    const averageRating = totalScore / interactions.length;
+    let totalScore = 0;
+    let totalRatings = 0;
+
+    usersWithRatings.forEach((user) => {
+      const interaction = user.mediaInteractions.find(
+        (i) => i.tmdbId === Number(tmdbId) && i.mediaType === mediaType
+      );
+      if (interaction && interaction.rating.score) {
+        totalScore += interaction.rating.score;
+        totalRatings++;
+      }
+    });
+
+    const averageRating = totalScore / totalRatings;
 
     // Find the user's rating (if they have rated)
     let userRating = null;
     if (userId) {
-      const userInteraction = await UserMediaInteraction.findOne({
-        userId,
-        tmdbId,
-        mediaType,
-      });
-
-      if (userInteraction) {
-        userRating = userInteraction.rating.score;
+      const user = await userModel.findById(userId);
+      if (user) {
+        const interaction = user.mediaInteractions.find(
+          (i) => i.tmdbId === Number(tmdbId) && i.mediaType === mediaType
+        );
+        if (interaction && interaction.rating.score) {
+          userRating = interaction.rating.score;
+        }
       }
     }
 
+    console.log("Final Response:", {
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      totalRatings,
+      userRating,
+    });
+
     res.json({
       averageRating: parseFloat(averageRating.toFixed(1)),
-      totalRatings: interactions.length,
-      userRating, // Return user's specific rating
+      totalRatings,
+      userRating,
     });
   } catch (error) {
     console.error("Error in getMovieRating:", error);
