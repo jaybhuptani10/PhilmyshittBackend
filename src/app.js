@@ -4,7 +4,7 @@ import cors from "cors";
 
 const app = express();
 const corsOptions = {
-  origin: ["https://cinevault-sepia.vercel.app/", "http://localhost:5173"],
+  origin: ["https://cinevaultt.vercel.app", "http://localhost:5173"],
   optionsSuccessStatus: 200,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
