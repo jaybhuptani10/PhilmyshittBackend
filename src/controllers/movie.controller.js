@@ -110,12 +110,20 @@ export const likedStatus = asyncHandler(async (req, res) => {
   if (interaction) {
     interaction.liked.status = !interaction.liked.status;
     interaction.liked.date = interaction.liked.status ? new Date() : null;
+
+    if (interaction.liked.status) {
+      interaction.watched.status = true; // Automatically enable watched
+      interaction.watched.date = new Date();
+      interaction.watchlisted.status = false; // Disable watchlisted
+      interaction.watchlisted.date = null;
+    }
   } else {
     user.mediaInteractions.push({
       tmdbId,
       mediaType,
       liked: { status: true, date: new Date() },
-      watched: { status: true, date: new Date() },
+      watched: { status: true, date: new Date() }, // Auto-enable watched
+      watchlisted: { status: false, date: null }, // Disable watchlisted
     });
   }
 
@@ -139,13 +147,20 @@ export const watchlistStatus = asyncHandler(async (req, res) => {
     interaction.watchlisted.date = interaction.watchlisted.status
       ? new Date()
       : null;
+
+    if (interaction.watchlisted.status) {
+      interaction.watched.status = false; // Disable watched
+      interaction.watched.date = null;
+      interaction.liked.status = false; // Disable liked
+      interaction.liked.date = null;
+    }
   } else {
     user.mediaInteractions.push({
       tmdbId,
       mediaType,
       watchlisted: { status: true, date: new Date() },
-      watched: { status: false, date: null },
-      liked: { status: false, date: null },
+      watched: { status: false, date: null }, // Disable watched
+      liked: { status: false, date: null }, // Disable liked
     });
   }
 
@@ -170,12 +185,20 @@ export const watchStatus = asyncHandler(async (req, res) => {
   if (interaction) {
     interaction.watched.status = !interaction.watched.status;
     interaction.watched.date = interaction.watched.status ? new Date() : null;
+
+    if (interaction.watched.status) {
+      interaction.liked.status = false; // Disable liked
+      interaction.liked.date = null;
+      interaction.watchlisted.status = false; // Disable watchlisted
+      interaction.watchlisted.date = null;
+    }
   } else {
     user.mediaInteractions.push({
       tmdbId,
       mediaType,
       watched: { status: true, date: new Date() },
-      watchlisted: { status: false, date: null },
+      liked: { status: false, date: null }, // Disable liked
+      watchlisted: { status: false, date: null }, // Disable watchlisted
     });
   }
 
