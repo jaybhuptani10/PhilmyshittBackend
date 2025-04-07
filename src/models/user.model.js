@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profilePicture: {
+      type: String,
+      default: null, // Default to null if no profile picture is uploaded
+    },
     mediaInteractions: [
       {
         tmdbId: {

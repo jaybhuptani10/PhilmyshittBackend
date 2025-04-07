@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 
 import {
   loginUser,
@@ -6,6 +7,7 @@ import {
   registerUser,
   userProfile,
   validateToken,
+  uploadProfilePicture,
 } from "../controllers/user.controller.js";
 import {
   addReviews,
@@ -20,6 +22,8 @@ import {
   watchStatus,
 } from "../controllers/movie.controller.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
+
+const upload = multer({ dest: "uploads/" }); // Temporary storage for uploaded files
 
 const userRouter = Router();
 userRouter.route("/register").post(registerUser);
@@ -46,4 +50,8 @@ userRouter.route("/rate").post(authMiddleware, rateMovie);
 userRouter
   .route("/rating/:mediaType/:tmdbId")
   .get(authMiddleware, getMovieRating);
+userRouter
+  .route("/profile/upload-picture")
+  .post(authMiddleware, upload.single("profilePicture"), uploadProfilePicture);
+
 export default userRouter;

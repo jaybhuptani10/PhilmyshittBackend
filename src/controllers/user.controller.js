@@ -1,8 +1,20 @@
 import asyncHandler from "../utils/asynchandler.js";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 import { userModel } from "../models/user.model.js"; // Use named import
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/apiresponse.js";
+import cloudinary from "cloudinary";
+
+// Configure Cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Register User
 const registerUser = asyncHandler(async (req, res) => {
@@ -110,8 +122,8 @@ const userProfile = asyncHandler(async (req, res) => {
           message: "User not found",
         });
       }
-      const { name, email, id, mediaInteractions } = user;
-      res.json({ name, email, id, mediaInteractions });
+      const { name, email, id, mediaInteractions, profilePicture } = user;
+      res.json({ name, email, id, mediaInteractions, profilePicture });
     });
   } catch (e) {
     console.error("Server error:", e);
@@ -122,6 +134,7 @@ const userProfile = asyncHandler(async (req, res) => {
     });
   }
 });
+
 const validateToken = asyncHandler(async (req, res) => {
   const token =
     req.headers.authorization && req.headers.authorization.split(" ")[1]; // Get token from 'Authorization' header
@@ -145,4 +158,52 @@ const validateToken = asyncHandler(async (req, res) => {
   });
 });
 
-export { logoutUser, loginUser, userProfile, registerUser, validateToken };
+const uploadProfilePicture = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  try {
+    // Upload image to Cloudinary
+    const result = await cloudinary.v2.uploader.upload(req.file.path, {
+      folder: "profile_pictures",
+      public_id: `user_${userId}`,
+      overwrite: true,
+    });
+
+    // Update user's profile picture URL
+    user.profilePicture = result.secure_url;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile picture uploaded successfully",
+      profilePicture: result.secure_url,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture,
+      },
+    });
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    res.status(500).json({ message: "Failed to upload profile picture" });
+  }
+});
+
+export {
+  logoutUser,
+  loginUser,
+  userProfile,
+  registerUser,
+  validateToken,
+  uploadProfilePicture,
+};

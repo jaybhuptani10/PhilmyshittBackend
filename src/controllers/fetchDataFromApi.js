@@ -1,13 +1,12 @@
 export const fetchDataFromApi = async (req, res) => {
   const { type, endpoint } = req.query; // Extract the movie type from query parameters
-  const url = `https://api.themoviedb.org/3/${type}/${endpoint}`;
+  const url = `https://api.themoviedb.org/3/${type}/${endpoint}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const options = {
       method: "GET",
       headers: {
         accept: "application/json",
-        Authorization: ` ${process.env.Authorization}`,
       },
     };
 
@@ -26,11 +25,11 @@ export const getInfo = async (req, res) => {
   const { type, id, sub, end } = req.query; // Extract the movie type from query parameters
   let url;
   if (sub === "" && end === "") {
-    url = `https://api.themoviedb.org/3/${type}/${id}`;
+    url = `https://api.themoviedb.org/3/${type}/${id}?api_key=${process.env.TMDB_API_KEY}`;
   } else if (end === "") {
-    url = `https://api.themoviedb.org/3/${type}/${id}/${sub}`;
+    url = `https://api.themoviedb.org/3/${type}/${id}/${sub}?api_key=${process.env.TMDB_API_KEY}`;
   } else {
-    url = `https://api.themoviedb.org/3/${type}/${id}/${sub}/${end}`;
+    url = `https://api.themoviedb.org/3/${type}/${id}/${sub}/${end}?api_key=${process.env.TMDB_API_KEY}`;
   }
 
   try {
@@ -38,7 +37,6 @@ export const getInfo = async (req, res) => {
       method: "GET",
       headers: {
         accept: "application/json",
-        Authorization: ` ${process.env.Authorization}`,
       },
     };
 
@@ -55,14 +53,13 @@ export const getInfo = async (req, res) => {
 export const getSeriesInfo = async (req, res) => {
   const { series } = req.query; // Extract the movie type from query parameters
 
-  const url = `https://api.themoviedb.org/3/tv/${series}`;
+  const url = `https://api.themoviedb.org/3/tv/${series}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const options = {
       method: "GET",
       headers: {
         accept: "application/json",
-        Authorization: ` ${process.env.Authorization}`,
       },
     };
 
@@ -79,14 +76,13 @@ export const getSeriesInfo = async (req, res) => {
 export const getSearchedMovie = async (req, res) => {
   const { result } = req.query; // Extract the movie type from query parameters
 
-  const url = `https://api.themoviedb.org/3/search/${result}`;
+  const url = `https://api.themoviedb.org/3/search/${result}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const options = {
       method: "GET",
       headers: {
         accept: "application/json",
-        Authorization: ` ${process.env.Authorization}`,
       },
     };
 
@@ -105,14 +101,13 @@ export const getMovieDetails = async (req, res) => {
   const { id, type } = req.query;
   // Extract the movie type from query parameters
 
-  const url = `https://api.themoviedb.org/3/movie/${id}/${type}`;
+  const url = `https://api.themoviedb.org/3/movie/${id}/${type}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const options = {
       method: "GET",
       headers: {
         accept: "application/json",
-        Authorization: ` ${process.env.Authorization}`,
       },
     };
 
